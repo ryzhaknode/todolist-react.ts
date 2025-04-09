@@ -1,13 +1,25 @@
-import {ReactNode, useCallback, useState} from 'react'
+import {ReactNode, useCallback, useEffect, useState} from 'react'
 import trashIcon from './assets/trash_icon.svg';
 import checkIcon from './assets/check-icon.svg';
 import sortIcon from './assets/sort-icon.svg';
 import arrowUpIcon from './assets/arrowUp-icon.svg';
 import './App.css'
+import { v4 as uuidv4 } from 'uuid';
 
 import {motion, AnimatePresence} from "framer-motion"
 import CreateTask from "./components/CreateTask.tsx";
 import StarIcon from "./components/StarIcon.tsx";
+import TaskList from "./components/TaskList.tsx";
+
+export const getFormattedDate = (): string => {
+    const now = new Date();
+
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+
+    return `${day}/${month}/${year}`;
+};
 
 const items = [
     {label: 'Default', icon: 'arrow-up'},
@@ -19,22 +31,30 @@ const items = [
     {label: 'Alphabetical (Z-A)', icon: null},
 ];
 
+export type TTask = {
+    id: string,
+    text: string,
+    completed: boolean,
+    favorite: boolean,
+    date: string,
+}
+
 function App() {
     const [selected, setSelected] = useState(null);
     const [sortBtn, setSortBtn] = useState(false);
-    const [tasks, setTasks] = useState([
-        {id: 1, text: 'Learn React', completed: true, favorite: false},
-        {id: 2, text: 'Build a todo app', completed: false, favorite: false}
+    const [tasks, setTasks] = useState<TTask[]>([
+        {id: "1", text: 'Learn React', completed: true, favorite: false, date: "15/02/2025"},
+        {id: "2", text: 'Build a todo app', completed: false, favorite: false, date: "16/02/2025"}
     ]);
     const handleCreateTask = useCallback((taskTxt: string) => {
-        const newId: number = tasks.length > 0 ? tasks[tasks.length - 1].id + 1 : 1;
         setTasks((tasks) => (
                 [...tasks,
                     {
-                        id: newId,
+                        id: String(uuidv4()),
                         text: taskTxt,
                         completed: false,
-                        favorite: false
+                        favorite: false,
+                        date: getFormattedDate()
                     }]
             )
         )
@@ -59,6 +79,15 @@ function App() {
                 task.id === id ? {...task, favorite: !task.favorite} : task
             )
         );
+
+    };
+
+    useEffect(()=>{
+        console.log(tasks)
+    },[tasks])
+
+    const handleDeleteTask = (id) => {
+        setTasks(prevTasks => prevTasks.filter((task) => task.id !== id));
     };
 
 
@@ -68,14 +97,14 @@ function App() {
                 TODO LIST
             </header>
             <main className='flex flex-grow flex-col justify-center items-center'>
-                <section className='rounded-lg shadow-sm border h-[500px] max-w-[300px] sm:max-w-[450px]'>
+                <section className='rounded-lg shadow-sm border min-h-[500px] max-w-[300px] sm:max-w-[450px]'>
                     <h1 className='p-6 text-2xl font-semibold leading-none tracking-tight'>Todo List</h1>
                     <div className='px-6 pb-6 max-w-[400px] flex flex-col justify-center items-center gap-3'>
-                        <CreateTask createCallback={handleCreateTask}/>
+                        <CreateTask onCreateTask={handleCreateTask}/>
                         <div className='relative w-full'>
                             <button
                                 onClick={() => setSortBtn(!sortBtn)}
-                                className=" w-full inline-flex items-center justify-center text-sm font-medium ring-offset-background h-9 rounded-md px-3 gap-1 border"
+                                className="cursor-pointer w-full inline-flex items-center justify-center text-sm font-medium ring-offset-background h-9 rounded-md px-3 gap-1 border"
                                 type="button" id="radix-«r4»" aria-haspopup="menu" aria-expanded="false"
                                 data-state="closed">
                                 <img src={sortIcon} alt="Sort Icon" className="icon"/>
@@ -128,38 +157,8 @@ function App() {
                                 Completed
                             </button>
                         </div>
-                        <ul className="w-full flex flex-col space-y-2">
-                            {tasks.map((task) => (
-                                <li key={task.id} className="flex items-center justify-between gap-2">
-                                    <div className="flex items-center gap-2 flex-1">
-                                        <div
-                                            onClick={() => toggleTaskCompletion(task.id)}
-                                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${task.completed ? 'bg-primary' : 'border-primary'}`}
-                                        >
-                                            {task.completed && <img src={checkIcon} alt="Trash Icon" className="icon"/>}
-                                        </div>
-                                        <div className='flex justify-between w-full'>
-                                            <span
-                                                className={`${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-                                                 {task.text}
-                                            </span>
-                                            <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-800">
-                                                31/12/2023
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <button onClick={() => toggleTaskFavorite(task.id)}>
-                                            <StarIcon color={task.favorite ? 'yellow' : 'white'}/>
-                                        </button>
-                                        <button
-                                            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors  h-10 w-10">
-                                            <img src={trashIcon} alt="Trash Icon" className="icon"/>
-                                        </button>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
+                        <TaskList tasks={tasks} onTaskCompletion={toggleTaskCompletion}
+                                  onTaskFavorite={toggleTaskFavorite} onDelete={handleDeleteTask}/>
                     </div>
                     <h3 className="flex items-center p-6 pt-0 text-sm text-muted-foreground">
                         2 items left

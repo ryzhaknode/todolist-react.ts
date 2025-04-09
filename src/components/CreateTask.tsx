@@ -1,9 +1,9 @@
 import React, {useState } from 'react';
 import '../styles/index.css';
 interface CreateTaskProps {
-    createCallback: (taskTxt: string) => void;
+    onCreateTask: (taskTxt: string) => void;
 }
-const CreateTask =  React.memo(({createCallback}: CreateTaskProps) => {
+const CreateTask =  React.memo(({onCreateTask}: CreateTaskProps) => {
     const [inputValue, setInputValue] = useState("");
     const [isError, setIsError] = useState(false);
 
@@ -24,7 +24,7 @@ const CreateTask =  React.memo(({createCallback}: CreateTaskProps) => {
     };
 
     const handleClickBtn = () => {
-        createCallback(inputValue);
+        onCreateTask(inputValue);
         setInputValue("");
     }
 
@@ -37,9 +37,11 @@ const CreateTask =  React.memo(({createCallback}: CreateTaskProps) => {
                 placeholder="Add a new task..."
             />
             <button disabled={inputValue === ""} onClick={handleClickBtn} className=" w-10 h-10 rounded-md font-bold p-2 bg-gray-900 text-white  hover:bg-gray-700 hover:scale-105 transition duration-300">+</button>
-            <div className={`absolute z-10 -bottom-15 sm:-bottom-10 left-0 w-[200px] sm:w-[300px] bg-red-100 text-red-700 border border-red-300 rounded-md px-3 py-2 text-sm shadow-md error-message ${isError ? 'show' : ''}`}>
+            <div
+                className={`absolute ${isError ? 'z-10' : 'z-0'}  -bottom-15 sm:-bottom-10 left-0 w-[200px] sm:w-[300px] bg-red-100 text-red-700 border border-red-300 rounded-md px-3 py-2 text-sm shadow-md error-message ${isError ? 'show' : ''}`}>
                 <p>❌ Only letters and numbers are allowed.</p>
             </div>
+
         </div>
     );
 });
