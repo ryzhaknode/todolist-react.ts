@@ -46,7 +46,7 @@ function App() {
         {id: "1", text: 'Learn React', completed: true, favorite: false, date: "15/02/2025"},
         {id: "2", text: 'Build a todo app', completed: false, favorite: false, date: "16/02/2025"}
     ]);
-    const handleCreateTask = useCallback((taskTxt: string) => {
+     const handleCreateTask = useCallback((taskTxt: string) => {
         setTasks((tasks) => (
                 [...tasks,
                     {
