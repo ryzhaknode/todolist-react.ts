@@ -1,4 +1,4 @@
-import {ReactNode, useCallback, useEffect, useState} from 'react'
+import React, {ReactNode, useCallback, useEffect, useMemo, useState} from 'react'
 import trashIcon from './assets/trash_icon.svg';
 import checkIcon from './assets/check-icon.svg';
 import sortIcon from './assets/sort-icon.svg';
@@ -10,6 +10,8 @@ import {motion, AnimatePresence} from "framer-motion"
 import CreateTask from "./components/CreateTask.tsx";
 import StarIcon from "./components/StarIcon.tsx";
 import TaskList from "./components/TaskList.tsx";
+import FilterButtons, {FilterType} from "./components/StatusButtons.tsx";
+import StatusButtons from "./components/StatusButtons.tsx";
 
 export const getFormattedDate = (): string => {
     const now = new Date();
@@ -20,6 +22,7 @@ export const getFormattedDate = (): string => {
 
     return `${day}/${month}/${year}`;
 };
+
 
 const items = [
     {label: 'Default', icon: 'arrow-up'},
@@ -46,6 +49,21 @@ function App() {
         {id: "1", text: 'Learn React', completed: true, favorite: false, date: "15/02/2025"},
         {id: "2", text: 'Build a todo app', completed: false, favorite: false, date: "16/02/2025"}
     ]);
+
+    const [statusButton, setStatusButton ] = useState<FilterType>('all');
+
+    const filteredTasks: TTask[] = useMemo(() => {
+        switch (statusButton) {
+            case 'active':
+                return tasks.filter(task => !task.completed);
+            case 'completed':
+                return tasks.filter(task => task.completed);
+            case 'all':
+            default:
+                return tasks;
+        }
+    }, [tasks, statusButton]);
+
      const handleCreateTask = useCallback((taskTxt: string) => {
         setTasks((tasks) => (
                 [...tasks,
@@ -59,6 +77,8 @@ function App() {
             )
         )
     }, [])
+
+
 
     const handleItemClick = (label) => {
         setSelected(label);
@@ -82,14 +102,15 @@ function App() {
 
     };
 
-    useEffect(()=>{
-        console.log(tasks)
-    },[tasks])
 
     const handleDeleteTask = (id) => {
         setTasks(prevTasks => prevTasks.filter((task) => task.id !== id));
     };
 
+    const handleClickStatusBtn = (e: React.MouseEvent<HTMLButtonElement>) => {
+        const filter = e.currentTarget.dataset.filter as FilterType;
+        setStatusButton(filter)
+    }
 
     return (
         <>
@@ -144,20 +165,8 @@ function App() {
                             }
                         </div>
 
-                        <div
-                            className="bg-gray-100 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground grid w-full grid-cols-3">
-                            <button type='button' className='px-3 font-medium rounded-sm py-1.5 bg-white'
-                                    aria-label="Show all tasks">
-                                All
-                            </button>
-                            <button aria-label="Show active tasks">
-                                Active
-                            </button>
-                            <button aria-label="Show completed tasks">
-                                Completed
-                            </button>
-                        </div>
-                        <TaskList tasks={tasks} onTaskCompletion={toggleTaskCompletion}
+                        <StatusButtons status={statusButton} onClickBtn={handleClickStatusBtn}/>
+                        <TaskList tasks={filteredTasks} onTaskCompletion={toggleTaskCompletion}
                                   onTaskFavorite={toggleTaskFavorite} onDelete={handleDeleteTask}/>
                     </div>
                     <h3 className="flex items-center p-6 pt-0 text-sm text-muted-foreground">
