@@ -1,42 +1,56 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
-import StatusButtons, { FilterType } from "../StatusButtons";
-import {vi} from "vitest";
+import {screen, fireEvent, render} from "@testing-library/react";
+import SortTasks, { SortOption } from "../SortTasks";
+import { vi } from "vitest";
 
-describe("StatusButtons", () => {
-    const renderComponent = (status: FilterType, onClick = vi.fn()) => {
-        render(<StatusButtons status={status} onClickBtn={onClick} />);
+describe("SortTasks", () => {
+    const renderComponent = (selectedSort: SortOption = "default", onSelect = vi.fn()) => {
+        render(<SortTasks selectedSort={selectedSort} onSelectFilter={onSelect} />);
+
     };
 
-    it("рендерить всі кнопки", () => {
-        renderComponent("all");
-
-        expect(screen.getByText("All")).toBeInTheDocument();
-        expect(screen.getByText("Active")).toBeInTheDocument();
-        expect(screen.getByText("Completed")).toBeInTheDocument();
+    it("рендерить кнопку сортування", () => {
+        renderComponent();
+        expect(screen.getByRole("button", { name: /sort/i })).toBeInTheDocument();
     });
 
-    it("виділяє правильну кнопку (bg-white)", () => {
-        renderComponent("active");
+    it("відкриває і закриває дропдаун при кліку на кнопку", () => {
+        renderComponent();
 
-        const activeBtn = screen.getByText("Active");
-        expect(activeBtn.className).toContain("bg-white");
+        const button = screen.getByRole("button", { name: /sort/i });
+        fireEvent.click(button);
+        expect(screen.getByText("Sort by")).toBeInTheDocument();
 
-        const allBtn = screen.getByText("All");
-        const completedBtn = screen.getByText("Completed");
-
-        expect(allBtn.className).not.toContain("bg-white");
-        expect(completedBtn.className).not.toContain("bg-white");
+        fireEvent.click(button);
+        expect(screen.queryByText("Sort by")).not.toBeInTheDocument();
     });
 
-    it("викликає onClickBtn при кліку", () => {
-        const onClickMock = vi.fn();
-        renderComponent("all", onClickMock);
+    it("викликає onSelectFilter при виборі опції", () => {
+        const onSelectMock = vi.fn();
+        renderComponent("default", onSelectMock);
 
-        const activeBtn = screen.getByText("Active");
-        fireEvent.click(activeBtn);
+        fireEvent.click(screen.getByRole("button", { name: /sort/i }));
+        const item = screen.getByText("Due Date (Late First)");
+        fireEvent.click(item);
 
-        expect(onClickMock).toHaveBeenCalledTimes(1);
-        expect(onClickMock.mock.calls[0][0]).toHaveProperty("type", "click");
+        expect(onSelectMock).toHaveBeenCalledWith("date-desc");
+    });
+
+    it("закриває дропдаун при кліку поза межами", () => {
+        renderComponent();
+
+        fireEvent.click(screen.getByRole("button", { name: /sort/i }));
+        expect(screen.getByText("Sort by")).toBeInTheDocument();
+
+        fireEvent.mouseDown(document.body);
+        expect(screen.queryByText("Sort by")).not.toBeInTheDocument();
+    });
+
+    it("виділяє активну опцію", () => {
+        renderComponent("priority-asc");
+        fireEvent.click(screen.getByRole("button", { name: /sort/i }));
+
+        const selectedOption = screen.getByText("Priority (Low to High)");
+        expect(selectedOption.className).toMatch(/bg-foreground/);
     });
 });
