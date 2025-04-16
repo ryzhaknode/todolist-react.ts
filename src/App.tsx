@@ -57,6 +57,10 @@ function App() {
                 return result.sort((a, b) => a.text.localeCompare(b.text));
             case 'alpha-desc':
                 return result.sort((a, b) => b.text.localeCompare(a.text));
+            case 'priority-asc':
+                return result.sort((a, b) => Number(a.favorite) - Number(b.favorite));
+            case 'priority-desc':
+                return result.sort((a, b) => Number(b.favorite) - Number(a.favorite));
             default:
                 return result;
         }
@@ -120,7 +124,7 @@ function App() {
                                   onTaskFavorite={toggleTaskFavorite} onDelete={handleDeleteTask}/>
                     </div>
                     <h3 className="flex items-center p-6 pt-0 text-sm text-muted-foreground">
-                        2 items left
+                        {`${tasks.filter(item => item.completed === false).length} items left`}
                     </h3>
                 </section>
             </main>
