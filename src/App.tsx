@@ -1,38 +1,14 @@
-import React, {ReactNode, useCallback, useEffect, useMemo, useState} from 'react'
-import trashIcon from './assets/trash_icon.svg';
-import checkIcon from './assets/check-icon.svg';
-import sortIcon from './assets/sort-icon.svg';
-import arrowUpIcon from './assets/arrowUp-icon.svg';
+import React, {useCallback, useMemo, useState} from 'react'
 import './App.css'
 import { v4 as uuidv4 } from 'uuid';
-
-import {motion, AnimatePresence} from "framer-motion"
 import CreateTask from "./components/CreateTask.tsx";
-import StarIcon from "./components/StarIcon.tsx";
 import TaskList from "./components/TaskList.tsx";
-import FilterButtons, {FilterType} from "./components/StatusButtons.tsx";
 import StatusButtons from "./components/StatusButtons.tsx";
-
-export const getFormattedDate = (): string => {
-    const now = new Date();
-
-    const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const year = now.getFullYear();
-
-    return `${day}/${month}/${year}`;
-};
-
-
-const items = [
-    {label: 'Default', icon: 'arrow-up'},
-    {label: 'Priority (High to Low)', icon: null},
-    {label: 'Priority (Low to High)', icon: null},
-    {label: 'Due Date (Early First)', icon: null},
-    {label: 'Due Date (Late First)', icon: null},
-    {label: 'Alphabetical (A-Z)', icon: null},
-    {label: 'Alphabetical (Z-A)', icon: null},
-];
+import SortTasks from "./components/SortTasks.tsx";
+import {getFormattedDate} from "./features/getFormattedDate.ts";
+import {useSortState} from "./hooks/useSortState.ts";
+import {useStatusButton} from "./hooks/useStatusButton.ts";
+import {parseDate} from "./features/parseDate.ts";
 
 export type TTask = {
     id: string,
@@ -42,29 +18,52 @@ export type TTask = {
     date: string,
 }
 
+
+
 function App() {
-    const [selected, setSelected] = useState(null);
-    const [sortBtn, setSortBtn] = useState(false);
     const [tasks, setTasks] = useState<TTask[]>([
         {id: "1", text: 'Learn React', completed: true, favorite: false, date: "15/02/2025"},
         {id: "2", text: 'Build a todo app', completed: false, favorite: false, date: "16/02/2025"}
     ]);
+    const {selectedSort, handleSelectFilter} = useSortState()
+    const {statusButton, handleClickStatusBtn} = useStatusButton()
 
-    const [statusButton, setStatusButton ] = useState<FilterType>('all');
-
-    const filteredTasks: TTask[] = useMemo(() => {
+    const filteredAndSortedTasks: TTask[] = useMemo(() => {
+        let result = tasks;
         switch (statusButton) {
             case 'active':
-                return tasks.filter(task => !task.completed);
+                result = tasks.filter(task => !task.completed);
+                break;
             case 'completed':
-                return tasks.filter(task => task.completed);
+                result = tasks.filter(task => task.completed);
+                break;
             case 'all':
             default:
-                return tasks;
+                result = tasks;
+                break;
         }
-    }, [tasks, statusButton]);
 
-     const handleCreateTask = useCallback((taskTxt: string) => {
+        result = [...result]; // захист від мутацій
+        switch (selectedSort) {
+            case 'date-asc':
+                return result.sort((a, b) =>
+                    new Date(parseDate(a.date)).getTime() - new Date(parseDate(b.date)).getTime()
+                );
+            case 'date-desc':
+                return result.sort((a, b) =>
+                    new Date(parseDate(b.date)).getTime() - new Date(parseDate(a.date)).getTime()
+                );
+            case 'alpha-asc':
+                return result.sort((a, b) => a.text.localeCompare(b.text));
+            case 'alpha-desc':
+                return result.sort((a, b) => b.text.localeCompare(a.text));
+            default:
+                return result;
+        }
+    }, [tasks, statusButton, selectedSort]);
+
+
+    const handleCreateTask = useCallback((taskTxt: string) => {
         setTasks((tasks) => (
                 [...tasks,
                     {
@@ -78,11 +77,6 @@ function App() {
         )
     }, [])
 
-
-
-    const handleItemClick = (label) => {
-        setSelected(label);
-    };
 
 
     const toggleTaskCompletion = (id) => {
@@ -107,10 +101,8 @@ function App() {
         setTasks(prevTasks => prevTasks.filter((task) => task.id !== id));
     };
 
-    const handleClickStatusBtn = (e: React.MouseEvent<HTMLButtonElement>) => {
-        const filter = e.currentTarget.dataset.filter as FilterType;
-        setStatusButton(filter)
-    }
+
+
 
     return (
         <>
@@ -122,51 +114,9 @@ function App() {
                     <h1 className='p-6 text-2xl font-semibold leading-none tracking-tight'>Todo List</h1>
                     <div className='px-6 pb-6 max-w-[400px] flex flex-col justify-center items-center gap-3'>
                         <CreateTask onCreateTask={handleCreateTask}/>
-                        <div className='relative w-full'>
-                            <button
-                                onClick={() => setSortBtn(!sortBtn)}
-                                className="cursor-pointer w-full inline-flex items-center justify-center text-sm font-medium ring-offset-background h-9 rounded-md px-3 gap-1 border"
-                                type="button" id="radix-«r4»" aria-haspopup="menu" aria-expanded="false"
-                                data-state="closed">
-                                <img src={sortIcon} alt="Sort Icon" className="icon"/>
-                                Sort
-                            </button>
-                            {sortBtn && <AnimatePresence>
-                                <motion.div
-                                    initial={{opacity: 0, y: -10}}
-                                    animate={{opacity: 1, y: 0}}
-                                    exit={{opacity: 0, y: -10}}
-                                    transition={{duration: 0.2}}
-                                    className="absolute w-full z-50 transform max-h-[503.5px] bg-white mt-1"
-                                >
-                                    <div
-                                        role="menu"
-                                        aria-orientation="vertical"
-                                        className="z-50 min-w-[8rem] max-w-[300px] sm:max-w-[450px] bg-popover border rounded-md shadow-md p-1 text-popover-foreground overflow-hidden"
-                                    >
-                                        <div className="px-2 py-1.5 text-sm font-semibold">Sort by</div>
-                                        <div role="separator" className="my-1 h-px bg-muted"/>
-                                        {items.map((item, index) => (
-                                            <div
-                                                key={index}
-                                                role="menuitem"
-                                                className={`hover:bg-lime-50 transition duration-300 relative flex items-center justify-between gap-2 px-2 py-1.5 text-sm cursor-pointer ${
-                                                    selected === item.label ? "bg-foreground text-accent-foreground" : ""
-                                                }`}
-                                                onClick={() => handleItemClick(item.label)}
-                                            >
-                                                <span>{item.label}</span>
-                                                {item.icon && <img src={arrowUpIcon} alt="default" className="icon"/>}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            </AnimatePresence>
-                            }
-                        </div>
-
+                        <SortTasks selectedSort={selectedSort} onSelectFilter={handleSelectFilter}/>
                         <StatusButtons status={statusButton} onClickBtn={handleClickStatusBtn}/>
-                        <TaskList tasks={filteredTasks} onTaskCompletion={toggleTaskCompletion}
+                        <TaskList tasks={filteredAndSortedTasks} onTaskCompletion={toggleTaskCompletion}
                                   onTaskFavorite={toggleTaskFavorite} onDelete={handleDeleteTask}/>
                     </div>
                     <h3 className="flex items-center p-6 pt-0 text-sm text-muted-foreground">
